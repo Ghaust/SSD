@@ -48,7 +48,6 @@ def eval_detection_voc(
         pred_scores,
         gt_bboxes,
         gt_labels,
-        gt_difficults=None,
         iou_thresh=0.5,
         use_07_metric=False):
     """Calculate average precisions based on evaluation code of PASCAL VOC.
@@ -114,7 +113,6 @@ def eval_detection_voc(
                                             pred_scores,
                                             gt_bboxes,
                                             gt_labels,
-                                            gt_difficults,
                                             iou_thresh=iou_thresh)
 
     ap = calc_detection_voc_ap(prec, rec, use_07_metric=use_07_metric)
@@ -124,7 +122,6 @@ def eval_detection_voc(
 
 def calc_detection_voc_prec_rec(
         pred_bboxes, pred_labels, pred_scores, gt_bboxes, gt_labels,
-        gt_difficults=None,
         iou_thresh=0.5):
     """Calculate precision and recall based on evaluation code of PASCAL VOC.
 
@@ -188,22 +185,15 @@ def calc_detection_voc_prec_rec(
     pred_scores = iter(pred_scores)
     gt_bboxes = iter(gt_bboxes)
     gt_labels = iter(gt_labels)
-    if gt_difficults is None:
-        gt_difficults = itertools.repeat(None)
-    else:
-        gt_difficults = iter(gt_difficults)
 
     n_pos = defaultdict(int)
     score = defaultdict(list)
     match = defaultdict(list)
 
-    for pred_bbox, pred_label, pred_score, gt_bbox, gt_label, gt_difficult in \
+    for pred_bbox, pred_label, pred_score, gt_bbox, gt_label in \
             six.moves.zip(
                 pred_bboxes, pred_labels, pred_scores,
-                gt_bboxes, gt_labels, gt_difficults):
-
-        if gt_difficult is None:
-            gt_difficult = np.zeros(gt_bbox.shape[0], dtype=bool)
+                gt_bboxes, gt_labels):
 
         for l in np.unique(np.concatenate((pred_label, gt_label)).astype(int)):
             pred_mask_l = pred_label == l
@@ -216,9 +206,8 @@ def calc_detection_voc_prec_rec(
 
             gt_mask_l = gt_label == l
             gt_bbox_l = gt_bbox[gt_mask_l]
-            gt_difficult_l = gt_difficult[gt_mask_l]
 
-            n_pos[l] += np.logical_not(gt_difficult_l).sum()
+            #n_pos[l] += np.logical_not(gt_difficult_l).sum()
             score[l].extend(pred_score_l)
 
             if len(pred_bbox_l) == 0:
@@ -242,20 +231,17 @@ def calc_detection_voc_prec_rec(
             selec = np.zeros(gt_bbox_l.shape[0], dtype=bool)
             for gt_idx in gt_index:
                 if gt_idx >= 0:
-                    if gt_difficult_l[gt_idx]:
-                        match[l].append(-1)
+                    if not selec[gt_idx]:
+                        match[l].append(1)
                     else:
-                        if not selec[gt_idx]:
-                            match[l].append(1)
-                        else:
-                            match[l].append(0)
+                        match[l].append(0)
                     selec[gt_idx] = True
                 else:
                     match[l].append(0)
 
     for iter_ in (
             pred_bboxes, pred_labels, pred_scores,
-            gt_bboxes, gt_labels, gt_difficults):
+            gt_bboxes, gt_labels):
         if next(iter_, None) is not None:
             raise ValueError('Length of input iterables need to be same.')
 

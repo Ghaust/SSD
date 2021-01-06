@@ -15,14 +15,12 @@ def voc_evaluation(dataset, predictions, output_dir, iteration=None):
     pred_scores_list = []
     gt_boxes_list = []
     gt_labels_list = []
-    gt_difficults = []
 
     for i in range(len(dataset)):
         image_id, annotation = dataset.get_annotation(i)
-        gt_boxes, gt_labels, is_difficult = annotation
+        gt_boxes, gt_labels = annotation
         gt_boxes_list.append(gt_boxes)
         gt_labels_list.append(gt_labels)
-        gt_difficults.append(is_difficult.astype(np.bool))
 
         img_info = dataset.get_img_info(i)
         prediction = predictions[i]
@@ -37,7 +35,6 @@ def voc_evaluation(dataset, predictions, output_dir, iteration=None):
                                 pred_scores=pred_scores_list,
                                 gt_bboxes=gt_boxes_list,
                                 gt_labels=gt_labels_list,
-                                gt_difficults=gt_difficults,
                                 iou_thresh=0.5,
                                 use_07_metric=True)
     logger = logging.getLogger("SSD.inference")
